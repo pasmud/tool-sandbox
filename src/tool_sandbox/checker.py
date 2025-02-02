@@ -18,3 +18,14 @@ def load_plan(source: str | Path | dict | list) -> Plan:
 
 def load_policy(source: str | Path | dict | None) -> Policy:
     """Load a policy from a path, JSON string, dict, or None for defaults."""
+    if source is None:
+        return Policy()
+    data = _load_jsonish(source, label="policy")
+    return Policy.from_dict(data)
+
+
+def _load_jsonish(source: str | Path | dict | list, *, label: str) -> Any:
+    if isinstance(source, (dict, list)):
+        return source
+    if isinstance(source, Path):
+        return _read_json_file(source, label=label)
