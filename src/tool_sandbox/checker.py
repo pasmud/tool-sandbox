@@ -61,3 +61,11 @@ def check_plan(plan: Plan | dict | list | str | Path, policy: Policy | dict | st
     The policy is evaluated deterministically. Findings are emitted in plan
     order, and the overall verdict is the most severe finding verdict.
     """
+
+    plan_obj = plan if isinstance(plan, Plan) else load_plan(plan)
+    policy_obj = policy if isinstance(policy, Policy) else load_policy(policy)
+
+    findings: list[Finding] = []
+    findings.extend(_check_plan_limits(plan_obj, policy_obj))
+    for index, step in enumerate(plan_obj.steps):
+        findings.extend(_check_step(step, index, policy_obj))
