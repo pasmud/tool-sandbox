@@ -69,3 +69,31 @@ def check_plan(plan: Plan | dict | list | str | Path, policy: Policy | dict | st
     findings.extend(_check_plan_limits(plan_obj, policy_obj))
     for index, step in enumerate(plan_obj.steps):
         findings.extend(_check_step(step, index, policy_obj))
+
+    verdict = Verdict.ALLOW
+    for finding in findings:
+        verdict = Verdict.combine(verdict, finding.verdict)
+
+    return Report(
+        verdict=verdict,
+        findings=findings,
+        steps_checked=len(plan_obj.steps),
+        policy=policy_obj.to_dict(),
+        metadata=dict(plan_obj.metadata),
+    )
+
+
+def _check_plan_limits(plan: Plan, policy: Policy) -> list[Finding]:
+    findings: list[Finding] = []
+    if policy.max_steps is not None and len(plan.steps) > policy.max_steps:
+        findings.append(
+            Finding(
+                rule_id="PLAN001",
+                severity=Severity.HIGH,
+                verdict=Verdict.BLOCK,
+                message=(
+                    f"plan has {len(plan.steps)} steps, exceeding max_steps={policy.max_steps}"
+                ),
+                detail={"step_count": len(plan.steps), "max_steps": policy.max_steps},
+            )
+        )
