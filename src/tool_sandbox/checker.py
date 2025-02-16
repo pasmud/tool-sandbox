@@ -97,3 +97,23 @@ def _check_plan_limits(plan: Plan, policy: Policy) -> list[Finding]:
                 detail={"step_count": len(plan.steps), "max_steps": policy.max_steps},
             )
         )
+    return findings
+
+
+def _check_step(step: ToolCall, index: int, policy: Policy) -> list[Finding]:
+    findings: list[Finding] = []
+    tool = step.tool
+    tool_norm = tool.strip().lower()
+
+    if policy.denied_tools and _matches_any(tool_norm, policy.denied_tools):
+        findings.append(
+            Finding(
+                rule_id="TOOL001",
+                severity=Severity.CRITICAL,
+                verdict=Verdict.BLOCK,
+                message=f"{step.label(index)} is explicitly denied by policy",
+                step_index=index,
+                tool=tool,
+                detail={"denied_tools": list(policy.denied_tools)},
+            )
+        )
