@@ -117,3 +117,45 @@ def _check_step(step: ToolCall, index: int, policy: Policy) -> list[Finding]:
                 detail={"denied_tools": list(policy.denied_tools)},
             )
         )
+
+    if policy.allowed_tools and not _matches_any(tool_norm, policy.allowed_tools):
+        findings.append(
+            Finding(
+                rule_id="TOOL002",
+                severity=Severity.HIGH,
+                verdict=Verdict.BLOCK,
+                message=f"{step.label(index)} is not in allowed_tools",
+                step_index=index,
+                tool=tool,
+                detail={"allowed_tools": list(policy.allowed_tools)},
+            )
+        )
+
+    if policy.deny_shell and _matches_any(tool_norm, policy.shell_tools):
+        findings.append(
+            Finding(
+                rule_id="TOOL003",
+                severity=Severity.CRITICAL,
+                verdict=Verdict.BLOCK,
+                message=f"{step.label(index)} uses a shell tool but deny_shell is enabled",
+                step_index=index,
+                tool=tool,
+                detail={"shell_tools": list(policy.shell_tools)},
+            )
+        )
+
+    if not policy.allow_network_tools and _matches_any(tool_norm, policy.network_tools):
+        findings.append(
+            Finding(
+                rule_id="TOOL004",
+                severity=Severity.HIGH,
+                verdict=Verdict.BLOCK,
+                message=f"{step.label(index)} uses a network tool but allow_network_tools is false",
+                step_index=index,
+                tool=tool,
+                detail={"network_tools": list(policy.network_tools)},
+            )
+        )
+
+    findings.extend(_check_arg_size(step, index, policy))
+    findings.extend(_check_denied_arg_patterns(step, index, policy))
