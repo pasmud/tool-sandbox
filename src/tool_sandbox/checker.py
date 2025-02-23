@@ -159,3 +159,19 @@ def _check_step(step: ToolCall, index: int, policy: Policy) -> list[Finding]:
 
     findings.extend(_check_arg_size(step, index, policy))
     findings.extend(_check_denied_arg_patterns(step, index, policy))
+    findings.extend(_check_paths(step, index, policy))
+    return findings
+
+
+def _matches_any(value: str, candidates: tuple[str, ...] | list[str]) -> bool:
+    value_norm = value.strip().lower()
+    return any(value_norm == str(c).strip().lower() for c in candidates)
+
+
+def _check_arg_size(step: ToolCall, index: int, policy: Policy) -> list[Finding]:
+    if policy.max_arg_chars is None:
+        return []
+    try:
+        rendered = json.dumps(step.args, sort_keys=True, separators=(",", ":"))
+    except (TypeError, ValueError):
+        rendered = str(step.args)
