@@ -175,3 +175,28 @@ def _check_arg_size(step: ToolCall, index: int, policy: Policy) -> list[Finding]
         rendered = json.dumps(step.args, sort_keys=True, separators=(",", ":"))
     except (TypeError, ValueError):
         rendered = str(step.args)
+    size = len(rendered)
+    if size > policy.max_arg_chars:
+        return [
+            Finding(
+                rule_id="ARG001",
+                severity=Severity.MEDIUM,
+                verdict=Verdict.BLOCK,
+                message=(
+                    f"{step.label(index)} args are {size} chars, exceeding max_arg_chars={policy.max_arg_chars}"
+                ),
+                step_index=index,
+                tool=step.tool,
+                detail={"arg_chars": size, "max_arg_chars": policy.max_arg_chars},
+            )
+        ]
+    return []
+
+
+def _check_denied_arg_patterns(step: ToolCall, index: int, policy: Policy) -> list[Finding]:
+    if not policy.denied_arg_patterns:
+        return []
+    try:
+        rendered = json.dumps(step.args, sort_keys=True, separators=(",", ":"))
+    except (TypeError, ValueError):
+        rendered = str(step.args)
