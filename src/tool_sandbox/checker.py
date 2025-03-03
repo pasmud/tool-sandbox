@@ -200,3 +200,48 @@ def _check_denied_arg_patterns(step: ToolCall, index: int, policy: Policy) -> li
         rendered = json.dumps(step.args, sort_keys=True, separators=(",", ":"))
     except (TypeError, ValueError):
         rendered = str(step.args)
+    findings: list[Finding] = []
+    for pattern in policy.denied_arg_patterns:
+        try:
+            regex = re.compile(pattern)
+        except re.error as exc:
+            raise ValueError(f"invalid denied_arg_patterns regex {pattern!r}: {exc}") from exc
+        match = regex.search(rendered)
+        if match:
+            findings.append(
+                Finding(
+                    rule_id="ARG002",
+                    severity=Severity.HIGH,
+                    verdict=Verdict.BLOCK,
+                    message=(
+                        f"{step.label(index)} args match denied pattern {pattern!r}"
+                    ),
+                    step_index=index,
+                    tool=step.tool,
+                    detail={"pattern": pattern, "match": match.group(0)},
+                )
+            )
+    return findings
+
+
+_PATH_ARG_KEYS = {
+    "path",
+    "paths",
+    "file",
+    "files",
+    "filename",
+    "filepath",
+    "file_path",
+    "dir",
+    "directory",
+    "cwd",
+    "source",
+    "destination",
+    "target",
+    "target_path",
+}
+
+
+def _check_paths(step: ToolCall, index: int, policy: Policy) -> list[Finding]:
+    # Apply path rules to filesystem tools, or to any step that has obvious path args.
+    tool_norm = step.tool.strip().lower()
