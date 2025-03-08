@@ -245,3 +245,11 @@ _PATH_ARG_KEYS = {
 def _check_paths(step: ToolCall, index: int, policy: Policy) -> list[Finding]:
     # Apply path rules to filesystem tools, or to any step that has obvious path args.
     tool_norm = step.tool.strip().lower()
+    is_fs_tool = _matches_any(tool_norm, policy.filesystem_tools)
+    path_values = list(_extract_path_values(step.args))
+    if not path_values:
+        return []
+    if not is_fs_tool and not _has_explicit_path_args(step.args):
+        return []
+
+    rules = policy.path_rules
