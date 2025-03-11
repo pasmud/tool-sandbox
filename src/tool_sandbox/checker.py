@@ -253,3 +253,82 @@ def _check_paths(step: ToolCall, index: int, policy: Policy) -> list[Finding]:
         return []
 
     rules = policy.path_rules
+    findings: list[Finding] = []
+    for arg_key, raw_path in path_values:
+        normalized = _normalize_path(raw_path)
+        for pattern in rules.denied_patterns:
+            try:
+                regex = re.compile(pattern)
+            except re.error as exc:
+                raise ValueError(f"invalid path denied pattern {pattern!r}: {exc}") from exc
+            match = regex.search(normalized)
+            if match:
+                findings.append(
+                    Finding(
+                        rule_id="PATH001",
+                        severity=Severity.HIGH,
+                        verdict=Verdict.BLOCK,
+                        message=(
+                            f"{step.label(index)} path {raw_path!r} matches denied pattern {pattern!r}"
+                        ),
+                        step_index=index,
+                        tool=step.tool,
+                        detail={
+                            "arg": arg_key,
+                            "path": raw_path,
+                            "normalized_path": normalized,
+                            "pattern": pattern,
+                            "match": match.group(0),
+                        },
+                    )
+                )
+
+        for prefix in rules.denied_prefixes:
+            if _path_has_prefix(normalized, prefix):
+                findings.append(
+                    Finding(
+                        rule_id="PATH002",
+                        severity=Severity.HIGH,
+                        verdict=Verdict.BLOCK,
+                        message=(
+                            f"{step.label(index)} path {raw_path!r} is under denied prefix {prefix!r}"
+                        ),
+                        step_index=index,
+                        tool=step.tool,
+                        detail={
+                            "arg": arg_key,
+                            "path": raw_path,
+                            "normalized_path": normalized,
+                            "prefix": prefix,
+                        },
+                    )
+                )
+
+        if rules.allowed_prefixes:
+            if not any(_path_has_prefix(normalized, p) for p in rules.allowed_prefixes):
+                findings.append(
+                    Finding(
+                        rule_id="PATH003",
+                        severity=Severity.HIGH,
+                        verdict=Verdict.BLOCK,
+                        message=(
+                            f"{step.label(index)} path {raw_path!r} is outside allowed_prefixes"
+                        ),
+                        step_index=index,
+                        tool=step.tool,
+                        detail={
+                            "arg": arg_key,
+                            "path": raw_path,
+                            "normalized_path": normalized,
+                            "allowed_prefixes": list(rules.allowed_prefixes),
+                        },
+                    )
+                )
+    return findings
+
+
+def _has_explicit_path_args(args: dict[str, Any]) -> bool:
+    for key in args:
+        if str(key).strip().lower() in _PATH_ARG_KEYS:
+            return True
+    return False
