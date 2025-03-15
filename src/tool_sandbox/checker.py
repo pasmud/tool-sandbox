@@ -332,3 +332,30 @@ def _has_explicit_path_args(args: dict[str, Any]) -> bool:
         if str(key).strip().lower() in _PATH_ARG_KEYS:
             return True
     return False
+
+
+def _extract_path_values(value: Any, key: str = "args") -> list[tuple[str, str]]:
+    found: list[tuple[str, str]] = []
+    if isinstance(value, dict):
+        for k, v in value.items():
+            k_str = str(k)
+            k_norm = k_str.strip().lower()
+            if k_norm in _PATH_ARG_KEYS:
+                found.extend(_collect_path_like(v, k_str))
+            else:
+                found.extend(_extract_path_values(v, k_str))
+    elif isinstance(value, list):
+        for i, item in enumerate(value):
+            found.extend(_extract_path_values(item, f"{key}[{i}]"))
+    return found
+
+
+def _collect_path_like(value: Any, key: str) -> list[tuple[str, str]]:
+    if isinstance(value, str):
+        return [(key, value)]
+    if isinstance(value, list):
+        out: list[tuple[str, str]] = []
+        for i, item in enumerate(value):
+            if isinstance(item, str):
+                out.append((f"{key}[{i}]", item))
+        return out
