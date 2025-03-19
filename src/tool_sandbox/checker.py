@@ -359,3 +359,15 @@ def _collect_path_like(value: Any, key: str) -> list[tuple[str, str]]:
             if isinstance(item, str):
                 out.append((f"{key}[{i}]", item))
         return out
+    return []
+
+
+def _normalize_path(path: str) -> str:
+    # Normalize to a simple POSIX-like absolute/relative string for policy checks.
+    # We avoid resolving against the host filesystem to keep checks deterministic.
+    raw = path.strip().replace("\\", "/")
+    if not raw:
+        return ""
+    is_abs = raw.startswith("/")
+    # Collapse repeated slashes
+    raw = re.sub(r"/+", "/", raw)
