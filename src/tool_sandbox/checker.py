@@ -371,3 +371,19 @@ def _normalize_path(path: str) -> str:
     is_abs = raw.startswith("/")
     # Collapse repeated slashes
     raw = re.sub(r"/+", "/", raw)
+    parts: list[str] = []
+    for part in raw.split("/"):
+        if part in ("", "."):
+            continue
+        if part == "..":
+            if parts and parts[-1] != "..":
+                parts.pop()
+            elif not is_abs:
+                parts.append(part)
+            # at absolute root, drop leading ..
+            continue
+        parts.append(part)
+    normalized = "/".join(parts)
+    if is_abs:
+        normalized = "/" + normalized
+    return normalized or ("/" if is_abs else ".")
