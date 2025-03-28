@@ -387,3 +387,14 @@ def _normalize_path(path: str) -> str:
     if is_abs:
         normalized = "/" + normalized
     return normalized or ("/" if is_abs else ".")
+
+
+def _path_has_prefix(path: str, prefix: str) -> bool:
+    n_path = _normalize_path(path)
+    n_prefix = _normalize_path(prefix)
+    if n_prefix in ("", "."):
+        return True
+    if n_path == n_prefix:
+        return True
+    if n_prefix == "/":
+        return n_path.startswith("/")
