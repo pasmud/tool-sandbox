@@ -398,3 +398,4 @@ def _path_has_prefix(path: str, prefix: str) -> bool:
         return True
     if n_prefix == "/":
         return n_path.startswith("/")
+    return n_path.startswith(n_prefix.rstrip("/") + "/")
