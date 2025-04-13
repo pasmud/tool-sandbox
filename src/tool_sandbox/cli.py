@@ -30,3 +30,39 @@ def build_parser() -> argparse.ArgumentParser:
         description="Check an execution plan JSON file against a sandbox policy JSON file.",
     )
     check.add_argument("plan", help="Path to plan JSON file, or '-' for stdin.")
+    check.add_argument(
+        "--policy",
+        "-p",
+        default=None,
+        help="Path to policy JSON file. Defaults to built-in safe defaults.",
+    )
+    check.add_argument(
+        "--format",
+        "-f",
+        choices=["json", "text"],
+        default="json",
+        help="Output format (default: json).",
+    )
+    check.add_argument(
+        "--output",
+        "-o",
+        default=None,
+        help="Write report to this file instead of stdout.",
+    )
+    check.add_argument(
+        "--strict",
+        action="store_true",
+        help="Exit non-zero on FLAG as well as BLOCK (default: BLOCK only).",
+    )
+    check.add_argument(
+        "--quiet",
+        "-q",
+        action="store_true",
+        help="Suppress report output; rely on exit code.",
+    )
+
+    return parser
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = build_parser()
