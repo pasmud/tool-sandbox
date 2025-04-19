@@ -66,3 +66,30 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
+    args = parser.parse_args(list(argv) if argv is not None else None)
+
+    if args.version:
+        from . import __version__
+
+        print(__version__)
+        return 0
+
+    if not args.command:
+        parser.print_help()
+        return 2
+
+    if args.command == "check":
+        return _cmd_check(args, parser)
+
+    parser.error(f"unknown command: {args.command}")
+    return 2  # pragma: no cover
+
+
+def _cmd_check(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
+    try:
+        plan = _load_plan_arg(args.plan)
+        policy = load_policy(args.policy) if args.policy else load_policy(None)
+        report = check_plan(plan, policy)
+    except Exception as exc:  # noqa: BLE001 - CLI boundary
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
