@@ -93,3 +93,40 @@ def _cmd_check(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int
     except Exception as exc:  # noqa: BLE001 - CLI boundary
         print(f"error: {exc}", file=sys.stderr)
         return 2
+
+    if not args.quiet:
+        rendered = _render_report(report.to_dict(), fmt=args.format)
+        if args.output:
+            try:
+                Path(args.output).write_text(
+                    rendered + ("" if rendered.endswith("\n") else "\n"),
+                    encoding="utf-8",
+                )
+            except OSError as exc:
+                print(f"error: cannot write output {args.output}: {exc}", file=sys.stderr)
+                return 2
+        else:
+            print(rendered)
+
+    return _exit_code(report.verdict, strict=bool(args.strict))
+
+
+def _load_plan_arg(value: str) -> Any:
+    if value == "-":
+        try:
+            raw = sys.stdin.read()
+        except OSError as exc:
+            raise ValueError(f"cannot read plan from stdin: {exc}") from exc
+        try:
+            return load_plan(json.loads(raw))
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"invalid JSON on stdin: {exc}") from exc
+    return load_plan(value)
+
+
+def _render_report(report: dict[str, Any], *, fmt: str) -> str:
+    if fmt == "json":
+        return json.dumps(report, indent=2, sort_keys=True)
+    if fmt == "text":
+        return _render_text(report)
+    raise ValueError(f"unsupported format: {fmt}")
