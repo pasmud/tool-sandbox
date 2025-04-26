@@ -130,3 +130,12 @@ def _render_report(report: dict[str, Any], *, fmt: str) -> str:
     if fmt == "text":
         return _render_text(report)
     raise ValueError(f"unsupported format: {fmt}")
+
+
+def _render_text(report: dict[str, Any]) -> str:
+    lines: list[str] = []
+    verdict = str(report.get("verdict", "unknown")).upper()
+    lines.append(f"Verdict: {verdict}")
+    lines.append(f"Steps checked: {report.get('steps_checked', 0)}")
+    lines.append(f"Findings: {report.get('finding_count', 0)}")
+    counts = report.get("counts", {})
