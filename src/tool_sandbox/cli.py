@@ -139,3 +139,33 @@ def _render_text(report: dict[str, Any]) -> str:
     lines.append(f"Steps checked: {report.get('steps_checked', 0)}")
     lines.append(f"Findings: {report.get('finding_count', 0)}")
     counts = report.get("counts", {})
+    if counts:
+        lines.append(
+            "Counts: "
+            + ", ".join(f"{k}={counts[k]}" for k in ("block", "flag", "allow") if k in counts)
+        )
+    findings = report.get("findings", [])
+    if findings:
+        lines.append("")
+        lines.append("Details:")
+        for finding in findings:
+            step = finding.get("step_index")
+            tool = finding.get("tool")
+            location = ""
+            if step is not None:
+                location = f" step={step}"
+            if tool:
+                location += f" tool={tool}"
+            lines.append(
+                f"- [{finding.get('verdict', '?').upper()} {finding.get('severity', '?').upper()} {finding.get('rule_id', '?')}]"
+                f"{location}: {finding.get('message', '')}"
+            )
+    return "\n".join(lines)
+
+
+def _exit_code(verdict: Verdict, *, strict: bool) -> int:
+    if verdict is Verdict.BLOCK:
+        return 1
+    if strict and verdict is Verdict.FLAG:
+        return 1
+    return 0
