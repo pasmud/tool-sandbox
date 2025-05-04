@@ -169,3 +169,7 @@ def _exit_code(verdict: Verdict, *, strict: bool) -> int:
     if strict and verdict is Verdict.FLAG:
         return 1
     return 0
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())
