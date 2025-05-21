@@ -42,3 +42,22 @@ class Verdict(str, Enum):
     """Overall or per-finding verdict."""
 
     ALLOW = "allow"
+    FLAG = "flag"
+    BLOCK = "block"
+
+    @classmethod
+    def from_value(cls, value: str | "Verdict") -> "Verdict":
+        if isinstance(value, cls):
+            return value
+        normalized = str(value).strip().lower()
+        for member in cls:
+            if member.value == normalized:
+                return member
+        raise ValueError(
+            f"unknown verdict {value!r}; expected one of: "
+            + ", ".join(m.value for m in cls)
+        )
+
+    @property
+    def rank(self) -> int:
+        return {Verdict.ALLOW: 0, Verdict.FLAG: 1, Verdict.BLOCK: 2}[self]
