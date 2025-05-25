@@ -61,3 +61,15 @@ class Verdict(str, Enum):
     @property
     def rank(self) -> int:
         return {Verdict.ALLOW: 0, Verdict.FLAG: 1, Verdict.BLOCK: 2}[self]
+
+    @classmethod
+    def combine(cls, left: "Verdict", right: "Verdict") -> "Verdict":
+        return left if left.rank >= right.rank else right
+
+
+@dataclass(frozen=True)
+class ToolCall:
+    """A single tool invocation in an execution plan."""
+
+    tool: str
+    args: dict[str, Any] = field(default_factory=dict)
