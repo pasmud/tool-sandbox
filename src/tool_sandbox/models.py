@@ -73,3 +73,39 @@ class ToolCall:
 
     tool: str
     args: dict[str, Any] = field(default_factory=dict)
+    id: str | None = None
+
+    def __post_init__(self) -> None:
+        if not self.tool or not str(self.tool).strip():
+            raise ValueError("tool call must have a non-empty tool name")
+        if not isinstance(self.args, dict):
+            raise ValueError(f"tool call {self.tool!r} args must be an object")
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any], index: int) -> "ToolCall":
+        if not isinstance(data, dict):
+            raise ValueError(f"plan step {index} must be an object")
+        unknown = set(data) - {"tool", "name", "args", "arguments", "id"}
+        if unknown:
+            raise ValueError(
+                f"plan step {index} has unknown fields: "
+                + ", ".join(sorted(unknown))
+            )
+        tool = data.get("tool", data.get("name"))
+        if tool is None:
+            raise ValueError(f"plan step {index} missing required field: tool")
+        raw_args = data.get("args", data.get("arguments", {}))
+        if raw_args is None:
+            raw_args = {}
+        if not isinstance(raw_args, dict):
+            raise ValueError(f"plan step {index} args must be an object")
+        step_id = data.get("id")
+        if step_id is not None:
+            step_id = str(step_id)
+        return cls(tool=str(tool), args=dict(raw_args), id=step_id)
+
+    def to_dict(self) -> dict[str, Any]:
+        data: dict[str, Any] = {"tool": self.tool, "args": dict(self.args)}
+        if self.id is not None:
+            data["id"] = self.id
+        return data
