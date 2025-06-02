@@ -109,3 +109,42 @@ class ToolCall:
         if self.id is not None:
             data["id"] = self.id
         return data
+
+    def label(self, index: int) -> str:
+        base = self.id if self.id else f"step-{index + 1}"
+        return f"{base} ({self.tool})"
+
+
+@dataclass(frozen=True)
+class Plan:
+    """An agent execution plan to be checked."""
+
+    steps: tuple[ToolCall, ...]
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def from_dict(cls, data: Any) -> "Plan":
+        if isinstance(data, list):
+            steps_raw = data
+            metadata: dict[str, Any] = {}
+        elif isinstance(data, dict):
+            unknown = set(data) - {"steps", "metadata", "plan", "name", "version"}
+            if unknown:
+                raise ValueError(
+                    "plan has unknown fields: " + ", ".join(sorted(unknown))
+                )
+            steps_raw = data.get("steps", data.get("plan"))
+            if steps_raw is None:
+                raise ValueError("plan object must contain a 'steps' list")
+            metadata = dict(data.get("metadata", {}))
+            if "name" in data:
+                metadata.setdefault("name", data["name"])
+            if "version" in data:
+                metadata.setdefault("version", data["version"])
+        else:
+            raise ValueError("plan must be a JSON array or object with 'steps'")
+
+        if not isinstance(steps_raw, list):
+            raise ValueError("plan steps must be a list")
+        steps = tuple(ToolCall.from_dict(item, i) for i, item in enumerate(steps_raw))
+        return cls(steps=steps, metadata=metadata)
