@@ -148,3 +148,17 @@ class Plan:
             raise ValueError("plan steps must be a list")
         steps = tuple(ToolCall.from_dict(item, i) for i, item in enumerate(steps_raw))
         return cls(steps=steps, metadata=metadata)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "steps": [step.to_dict() for step in self.steps],
+            "metadata": dict(self.metadata),
+        }
+
+
+@dataclass(frozen=True)
+class PathRule:
+    """Policy constraints for filesystem-like path arguments."""
+
+    allowed_prefixes: tuple[str, ...] = ()
+    denied_prefixes: tuple[str, ...] = ()
