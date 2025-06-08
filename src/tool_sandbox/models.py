@@ -162,3 +162,40 @@ class PathRule:
 
     allowed_prefixes: tuple[str, ...] = ()
     denied_prefixes: tuple[str, ...] = ()
+    denied_patterns: tuple[str, ...] = ()
+
+    @classmethod
+    def from_dict(cls, data: Any) -> "PathRule":
+        if not isinstance(data, dict):
+            raise ValueError("path rule must be an object")
+        unknown = set(data) - {"allowed_prefixes", "denied_prefixes", "denied_patterns"}
+        if unknown:
+            raise ValueError(
+                "path rule has unknown fields: " + ", ".join(sorted(unknown))
+            )
+
+        def _str_tuple(key: str) -> tuple[str, ...]:
+            raw = data.get(key, ())
+            if isinstance(raw, list):
+                raw = tuple(raw)
+            if not isinstance(raw, tuple):
+                raise ValueError(f"path rule {key} must be a list of strings")
+            return tuple(str(item) for item in raw)
+
+        return cls(
+            allowed_prefixes=_str_tuple("allowed_prefixes"),
+            denied_prefixes=_str_tuple("denied_prefixes"),
+            denied_patterns=_str_tuple("denied_patterns"),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "allowed_prefixes": list(self.allowed_prefixes),
+            "denied_prefixes": list(self.denied_prefixes),
+            "denied_patterns": list(self.denied_patterns),
+        }
+
+
+@dataclass(frozen=True)
+class Policy:
+    """Sandbox policy controlling which tool calls are allowed."""
