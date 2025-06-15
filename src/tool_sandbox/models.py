@@ -199,3 +199,8 @@ class PathRule:
 @dataclass(frozen=True)
 class Policy:
     """Sandbox policy controlling which tool calls are allowed."""
+
+    allowed_tools: tuple[str, ...] = ()
+    denied_tools: tuple[str, ...] = ()
+    denied_arg_patterns: tuple[str, ...] = ()
+    path_rules: PathRule = field(default_factory=PathRule)
