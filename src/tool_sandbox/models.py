@@ -204,3 +204,15 @@ class Policy:
     denied_tools: tuple[str, ...] = ()
     denied_arg_patterns: tuple[str, ...] = ()
     path_rules: PathRule = field(default_factory=PathRule)
+    max_steps: int | None = None
+    max_arg_chars: int | None = None
+    allow_network_tools: bool = False
+    network_tools: tuple[str, ...] = ("http_request", "curl", "wget", "fetch")
+    filesystem_tools: tuple[str, ...] = (
+        "read_file",
+        "write_file",
+        "list_dir",
+        "delete_file",
+        "move_file",
+        "copy_file",
+    )
