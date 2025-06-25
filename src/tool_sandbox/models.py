@@ -216,3 +216,80 @@ class Policy:
         "move_file",
         "copy_file",
     )
+    shell_tools: tuple[str, ...] = ("shell", "bash", "exec", "run_command")
+    deny_shell: bool = False
+
+    def __post_init__(self) -> None:
+        if self.max_steps is not None and self.max_steps < 0:
+            raise ValueError("max_steps must be >= 0")
+        if self.max_arg_chars is not None and self.max_arg_chars < 0:
+            raise ValueError("max_arg_chars must be >= 0")
+
+    @classmethod
+    def from_dict(cls, data: Any) -> "Policy":
+        if not isinstance(data, dict):
+            raise ValueError("policy must be an object")
+        known = {
+            "allowed_tools",
+            "denied_tools",
+            "denied_arg_patterns",
+            "path_rules",
+            "paths",
+            "max_steps",
+            "max_arg_chars",
+            "allow_network_tools",
+            "network_tools",
+            "filesystem_tools",
+            "shell_tools",
+            "deny_shell",
+        }
+        unknown = set(data) - known
+        if unknown:
+            raise ValueError(
+                "policy has unknown fields: " + ", ".join(sorted(unknown))
+            )
+
+        def _str_tuple(key: str, default: tuple[str, ...] = ()) -> tuple[str, ...]:
+            raw = data.get(key, default)
+            if isinstance(raw, list):
+                raw = tuple(raw)
+            if not isinstance(raw, tuple):
+                raise ValueError(f"policy {key} must be a list of strings")
+            return tuple(str(item) for item in raw)
+
+        def _opt_int(key: str) -> int | None:
+            raw = data.get(key)
+            if raw is None:
+                return None
+            if isinstance(raw, bool) or not isinstance(raw, int):
+                raise ValueError(f"policy {key} must be an integer or null")
+            return int(raw)
+
+        path_rules_raw = data.get("path_rules", data.get("paths", {}))
+        path_rules = PathRule.from_dict(path_rules_raw) if path_rules_raw else PathRule()
+
+        return cls(
+            allowed_tools=_str_tuple("allowed_tools", ()),
+            denied_tools=_str_tuple("denied_tools", ()),
+            denied_arg_patterns=_str_tuple("denied_arg_patterns", ()),
+            path_rules=path_rules,
+            max_steps=_opt_int("max_steps"),
+            max_arg_chars=_opt_int("max_arg_chars"),
+            allow_network_tools=bool(data.get("allow_network_tools", False)),
+            network_tools=_str_tuple(
+                "network_tools", ("http_request", "curl", "wget", "fetch")
+            ),
+            filesystem_tools=_str_tuple(
+                "filesystem_tools",
+                (
+                    "read_file",
+                    "write_file",
+                    "list_dir",
+                    "delete_file",
+                    "move_file",
+                    "copy_file",
+                ),
+            ),
+            shell_tools=_str_tuple("shell_tools", ("shell", "bash", "exec", "run_command")),
+            deny_shell=bool(data.get("deny_shell", False)),
+        )
