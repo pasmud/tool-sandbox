@@ -293,3 +293,26 @@ class Policy:
             shell_tools=_str_tuple("shell_tools", ("shell", "bash", "exec", "run_command")),
             deny_shell=bool(data.get("deny_shell", False)),
         )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "allowed_tools": list(self.allowed_tools),
+            "denied_tools": list(self.denied_tools),
+            "denied_arg_patterns": list(self.denied_arg_patterns),
+            "path_rules": self.path_rules.to_dict(),
+            "max_steps": self.max_steps,
+            "max_arg_chars": self.max_arg_chars,
+            "allow_network_tools": self.allow_network_tools,
+            "network_tools": list(self.network_tools),
+            "filesystem_tools": list(self.filesystem_tools),
+            "shell_tools": list(self.shell_tools),
+            "deny_shell": self.deny_shell,
+        }
+
+
+@dataclass(frozen=True)
+class Finding:
+    """A policy finding for a plan step."""
+
+    rule_id: str
+    severity: Severity
