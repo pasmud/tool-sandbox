@@ -316,3 +316,7 @@ class Finding:
 
     rule_id: str
     severity: Severity
+    verdict: Verdict
+    message: str
+    step_index: int | None = None
+    tool: str | None = None
