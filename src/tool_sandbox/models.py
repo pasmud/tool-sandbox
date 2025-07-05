@@ -320,3 +320,27 @@ class Finding:
     message: str
     step_index: int | None = None
     tool: str | None = None
+    detail: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        data: dict[str, Any] = {
+            "rule_id": self.rule_id,
+            "severity": self.severity.value,
+            "verdict": self.verdict.value,
+            "message": self.message,
+        }
+        if self.step_index is not None:
+            data["step_index"] = self.step_index
+        if self.tool is not None:
+            data["tool"] = self.tool
+        if self.detail:
+            data["detail"] = dict(self.detail)
+        return data
+
+
+@dataclass
+class Report:
+    """Result of checking a plan against a policy."""
+
+    verdict: Verdict
+    findings: list[Finding] = field(default_factory=list)
