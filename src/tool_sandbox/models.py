@@ -344,3 +344,10 @@ class Report:
 
     verdict: Verdict
     findings: list[Finding] = field(default_factory=list)
+    steps_checked: int = 0
+    policy: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def blocked(self) -> bool:
+        return self.verdict is Verdict.BLOCK
