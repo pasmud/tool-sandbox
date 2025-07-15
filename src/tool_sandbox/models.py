@@ -351,3 +351,22 @@ class Report:
     @property
     def blocked(self) -> bool:
         return self.verdict is Verdict.BLOCK
+
+    @property
+    def flagged(self) -> bool:
+        return self.verdict is Verdict.FLAG
+
+    @property
+    def allowed(self) -> bool:
+        return self.verdict is Verdict.ALLOW
+
+    @property
+    def finding_count(self) -> int:
+        return len(self.findings)
+
+    @property
+    def counts(self) -> dict[str, int]:
+        out = {"allow": 0, "flag": 0, "block": 0}
+        for f in self.findings:
+            out[f.verdict.value] += 1
+        return out
