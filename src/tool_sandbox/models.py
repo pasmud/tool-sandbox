@@ -370,3 +370,17 @@ class Report:
         for f in self.findings:
             out[f.verdict.value] += 1
         return out
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "verdict": self.verdict.value,
+            "blocked": self.blocked,
+            "flagged": self.flagged,
+            "allowed": self.allowed,
+            "steps_checked": self.steps_checked,
+            "finding_count": self.finding_count,
+            "counts": self.counts,
+            "findings": [f.to_dict() for f in self.findings],
+            "policy": dict(self.policy),
+            "metadata": dict(self.metadata),
+        }
