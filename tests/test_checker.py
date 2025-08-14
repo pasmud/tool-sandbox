@@ -82,3 +82,32 @@ class CheckPlanTests(unittest.TestCase):
             {"allowed_tools": ["read_file"]},
         )
         self.assertTrue(any(f.rule_id == "TOOL002" for f in report.findings))
+
+    def test_deny_shell(self) -> None:
+        report = check_plan(
+            [{"tool": "bash", "args": {"command": "echo hi"}}],
+            {"deny_shell": True},
+        )
+        self.assertTrue(any(f.rule_id == "TOOL003" for f in report.findings))
+
+    def test_network_tools_blocked_by_default(self) -> None:
+        report = check_plan(
+            [{"tool": "http_request", "args": {"url": "https://example.com"}}],
+            {},
+        )
+        self.assertTrue(any(f.rule_id == "TOOL004" for f in report.findings))
+
+    def test_network_tools_allowed_when_enabled(self) -> None:
+        report = check_plan(
+            [{"tool": "http_request", "args": {"url": "https://example.com"}}],
+            {"allow_network_tools": True},
+        )
+        self.assertFalse(any(f.rule_id == "TOOL004" for f in report.findings))
+        self.assertIs(report.verdict, Verdict.ALLOW)
+
+    def test_arg_size_limit(self) -> None:
+        report = check_plan(
+            [{"tool": "read_file", "args": {"path": "/workspace/" + ("a" * 200)}}],
+            {"max_arg_chars": 50},
+        )
+        self.assertTrue(any(f.rule_id == "ARG001" for f in report.findings))
