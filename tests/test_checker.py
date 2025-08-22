@@ -138,3 +138,32 @@ class CheckPlanTests(unittest.TestCase):
             {"path_rules": {"allowed_prefixes": ["/workspace"]}},
         )
         self.assertTrue(any(f.rule_id == "PATH003" for f in report.findings))
+
+    def test_path_allowed_prefix_match(self) -> None:
+        report = check_plan(
+            [{"tool": "write_file", "args": {"path": "/workspace/sub/out.txt"}}],
+            {"path_rules": {"allowed_prefixes": ["/workspace"]}, "allowed_tools": ["write_file"]},
+        )
+        self.assertIs(report.verdict, Verdict.ALLOW)
+
+    def test_path_denied_pattern(self) -> None:
+        report = check_plan(
+            [{"tool": "read_file", "args": {"path": "/workspace/.env"}}],
+            {"path_rules": {"denied_patterns": ["\\.env$"]}},
+        )
+        self.assertTrue(any(f.rule_id == "PATH001" for f in report.findings))
+
+    def test_path_normalization_blocks_traversal(self) -> None:
+        report = check_plan(
+            [{"tool": "read_file", "args": {"path": "/workspace/../etc/passwd"}}],
+            {"path_rules": {"allowed_prefixes": ["/workspace"], "denied_prefixes": ["/etc"]}},
+        )
+        self.assertIs(report.verdict, Verdict.BLOCK)
+        self.assertTrue(any(f.rule_id in {"PATH002", "PATH003"} for f in report.findings))
+
+    def test_path_checks_apply_to_explicit_path_args_on_unknown_tool(self) -> None:
+        report = check_plan(
+            [{"tool": "custom_tool", "args": {"file_path": "/etc/shadow"}}],
+            {"path_rules": {"denied_prefixes": ["/etc"]}},
+        )
+        self.assertTrue(any(f.rule_id == "PATH002" for f in report.findings))
