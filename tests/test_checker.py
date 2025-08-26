@@ -167,3 +167,34 @@ class CheckPlanTests(unittest.TestCase):
             {"path_rules": {"denied_prefixes": ["/etc"]}},
         )
         self.assertTrue(any(f.rule_id == "PATH002" for f in report.findings))
+
+    def test_multiple_path_values(self) -> None:
+        report = check_plan(
+            [{"tool": "copy_file", "args": {"source": "/workspace/a", "destination": "/etc/b"}}],
+            {"path_rules": {"allowed_prefixes": ["/workspace"]}},
+        )
+        path_findings = [f for f in report.findings if f.rule_id == "PATH003"]
+        self.assertTrue(path_findings)
+        self.assertTrue(any(f.detail.get("arg") == "destination" for f in path_findings))
+
+    def test_report_to_dict_is_json_serializable(self) -> None:
+        report = check_plan(
+            [{"tool": "shell", "args": {"command": "echo hi"}}],
+            {"deny_shell": True},
+        )
+        encoded = json.dumps(report.to_dict())
+        decoded = json.loads(encoded)
+        self.assertEqual(decoded["verdict"], "block")
+        self.assertGreater(decoded["finding_count"], 0)
+
+    def test_policy_object_passthrough(self) -> None:
+        policy = Policy.from_dict({"allowed_tools": ["read_file"]})
+        report = check_plan([{"tool": "read_file", "args": {}}], policy)
+        self.assertIs(report.verdict, Verdict.ALLOW)
+
+    def test_invalid_regex_in_path_pattern_raises(self) -> None:
+        with self.assertRaises(ValueError):
+            check_plan(
+                [{"tool": "read_file", "args": {"path": "/workspace/a"}}],
+                {"path_rules": {"denied_patterns": ["("]}},
+            )
