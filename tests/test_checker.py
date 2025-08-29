@@ -198,3 +198,7 @@ class CheckPlanTests(unittest.TestCase):
                 [{"tool": "read_file", "args": {"path": "/workspace/a"}}],
                 {"path_rules": {"denied_patterns": ["("]}},
             )
+
+
+if __name__ == "__main__":
+    unittest.main()
