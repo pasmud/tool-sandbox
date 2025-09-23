@@ -61,3 +61,40 @@ class CLIMainTests(unittest.TestCase):
             self.assertEqual(code, 0, msg=out + err)
             report = json.loads(out)
             self.assertEqual(report["verdict"], "allow")
+
+    def test_check_text_output_blocked(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            plan = root / "plan.json"
+            plan.write_text(
+                json.dumps([{"tool": "http_request", "args": {"url": "https://example.com"}}]),
+                encoding="utf-8",
+            )
+            code, out, _err = self.run_main(["check", str(plan), "--format", "text"])
+            self.assertEqual(code, 1)
+            self.assertIn("Verdict: BLOCK", out)
+            self.assertIn("TOOL004", out)
+
+    def test_check_strict_blocks_on_block(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            plan = root / "plan.json"
+            policy = root / "policy.json"
+            plan.write_text(
+                json.dumps([{"tool": "read_file", "args": {"path": "/etc/passwd"}}]),
+                encoding="utf-8",
+            )
+            policy.write_text(json.dumps({"path_rules": {"denied_prefixes": ["/etc"]}}), encoding="utf-8")
+            code, _out, _err = self.run_main(["check", str(plan), "--policy", str(policy), "--strict"])
+            self.assertEqual(code, 1)
+
+    def test_strict_exit_code_for_flag_verdict(self) -> None:
+        # The checker currently emits BLOCK findings; strict mode should also
+        # treat a FLAG verdict as non-zero per CLI contract.
+        from tool_sandbox.cli import _exit_code
+        from tool_sandbox.models import Verdict
+
+        self.assertEqual(_exit_code(Verdict.FLAG, strict=False), 0)
+        self.assertEqual(_exit_code(Verdict.FLAG, strict=True), 1)
+        self.assertEqual(_exit_code(Verdict.ALLOW, strict=True), 0)
+        self.assertEqual(_exit_code(Verdict.BLOCK, strict=False), 1)
