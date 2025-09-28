@@ -98,3 +98,53 @@ class CLIMainTests(unittest.TestCase):
         self.assertEqual(_exit_code(Verdict.FLAG, strict=True), 1)
         self.assertEqual(_exit_code(Verdict.ALLOW, strict=True), 0)
         self.assertEqual(_exit_code(Verdict.BLOCK, strict=False), 1)
+
+    def test_check_stdin(self) -> None:
+        plan_json = json.dumps([{"tool": "read_file", "args": {"path": "/workspace/x"}}])
+        code, out, err = self.run_main(
+            [
+                "check",
+                "-",
+                "--policy",
+                json.dumps({"allowed_tools": ["read_file"], "path_rules": {"allowed_prefixes": ["/workspace"]}}),
+            ],
+            stdin=plan_json,
+        )
+        # --policy expects a path or JSON string; load_policy handles file path or JSON? It tries Path.exists then json.loads.
+        # Our CLI passes policy through load_policy which accepts path/json string/dict; here we pass a string arg that is not a file - load_policy will json.loads it.
+        self.assertEqual(code, 0, msg=out + err)
+        self.assertEqual(json.loads(out)["verdict"], "allow")
+
+    def test_check_output_file(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            plan = root / "plan.json"
+            out_file = root / "report.json"
+            plan.write_text(json.dumps([{"tool": "read_file", "args": {"path": "/workspace/a"}}]), encoding="utf-8")
+            code, out, err = self.run_main(
+                [
+                    "check",
+                    str(plan),
+                    "--policy",
+                    json.dumps({"allowed_tools": ["read_file"], "path_rules": {"allowed_prefixes": ["/workspace"]}}),
+                    "--output",
+                    str(out_file),
+                ]
+            )
+            self.assertEqual(code, 0, msg=err)
+            self.assertEqual(out, "")
+            report = json.loads(out_file.read_text(encoding="utf-8"))
+            self.assertEqual(report["verdict"], "allow")
+
+    def test_check_quiet(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            plan = root / "plan.json"
+            plan.write_text(
+                json.dumps([{"tool": "http_request", "args": {"url": "https://example.com"}}]),
+                encoding="utf-8",
+            )
+            code, out, err = self.run_main(["check", str(plan), "--quiet"])
+            self.assertEqual(code, 1)
+            self.assertEqual(out, "")
+            self.assertEqual(err, "")
