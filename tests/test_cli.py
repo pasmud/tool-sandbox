@@ -148,3 +148,51 @@ class CLIMainTests(unittest.TestCase):
             self.assertEqual(code, 1)
             self.assertEqual(out, "")
             self.assertEqual(err, "")
+
+    def test_invalid_plan_returns_2(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            plan = root / "plan.json"
+            plan.write_text("{broken", encoding="utf-8")
+            code, _out, err = self.run_main(["check", str(plan)])
+            self.assertEqual(code, 2)
+            self.assertIn("error:", err)
+
+
+class CLISubprocessTests(unittest.TestCase):
+    def test_module_entrypoint_help(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        proc = subprocess.run(
+            [sys.executable, "-m", "tool_sandbox", "--help"],
+            cwd=repo_root,
+            env={**dict(__import__("os").environ), "PYTHONPATH": str(repo_root / "src")},
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(proc.returncode, 0, msg=proc.stderr)
+        self.assertIn("tool-sandbox", proc.stdout)
+        self.assertIn("check", proc.stdout)
+
+    def test_module_check_sample(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        proc = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "tool_sandbox",
+                "check",
+                "examples/sample_plan.json",
+                "--policy",
+                "examples/sample_policy.json",
+                "--format",
+                "text",
+            ],
+            cwd=repo_root,
+            env={**dict(__import__("os").environ), "PYTHONPATH": str(repo_root / "src")},
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(proc.returncode, 1, msg=proc.stdout + proc.stderr)
+        self.assertIn("Verdict: BLOCK", proc.stdout)
