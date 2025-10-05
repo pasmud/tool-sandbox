@@ -196,3 +196,7 @@ class CLISubprocessTests(unittest.TestCase):
         )
         self.assertEqual(proc.returncode, 1, msg=proc.stdout + proc.stderr)
         self.assertIn("Verdict: BLOCK", proc.stdout)
+
+
+if __name__ == "__main__":
+    unittest.main()
