@@ -56,3 +56,19 @@ class ToolCallTests(unittest.TestCase):
         self.assertEqual(call.args, {"cmd": "ls"})
         self.assertEqual(call.id, "s1")
         self.assertEqual(call.label(3), "s1 (shell)")
+
+    def test_from_dict_rejects_missing_tool(self) -> None:
+        with self.assertRaises(ValueError):
+            ToolCall.from_dict({"args": {}}, 0)
+
+    def test_from_dict_rejects_unknown_fields(self) -> None:
+        with self.assertRaises(ValueError):
+            ToolCall.from_dict({"tool": "x", "args": {}, "extra": 1}, 0)
+
+    def test_from_dict_rejects_non_object_args(self) -> None:
+        with self.assertRaises(ValueError):
+            ToolCall.from_dict({"tool": "x", "args": []}, 0)
+
+    def test_empty_tool_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            ToolCall(tool="")
