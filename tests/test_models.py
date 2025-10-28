@@ -72,3 +72,28 @@ class ToolCallTests(unittest.TestCase):
     def test_empty_tool_rejected(self) -> None:
         with self.assertRaises(ValueError):
             ToolCall(tool="")
+
+    def test_to_dict_round_trip(self) -> None:
+        call = ToolCall(tool="write_file", args={"path": "/tmp/a"}, id="w1")
+        restored = ToolCall.from_dict(call.to_dict(), 0)
+        self.assertEqual(restored, call)
+
+
+class PlanTests(unittest.TestCase):
+    def test_from_list(self) -> None:
+        plan = Plan.from_dict([{"tool": "read_file", "args": {"path": "/x"}}])
+        self.assertEqual(len(plan.steps), 1)
+        self.assertEqual(plan.steps[0].tool, "read_file")
+
+    def test_from_object_with_metadata(self) -> None:
+        plan = Plan.from_dict(
+            {
+                "name": "p1",
+                "version": "2",
+                "steps": [{"tool": "t", "args": {}}],
+                "metadata": {"owner": "test"},
+            }
+        )
+        self.assertEqual(plan.metadata["name"], "p1")
+        self.assertEqual(plan.metadata["version"], "2")
+        self.assertEqual(plan.metadata["owner"], "test")
