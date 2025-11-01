@@ -97,3 +97,15 @@ class PlanTests(unittest.TestCase):
         self.assertEqual(plan.metadata["name"], "p1")
         self.assertEqual(plan.metadata["version"], "2")
         self.assertEqual(plan.metadata["owner"], "test")
+
+    def test_rejects_unknown_top_level_field(self) -> None:
+        with self.assertRaises(ValueError):
+            Plan.from_dict({"steps": [], "oops": True})
+
+    def test_rejects_missing_steps(self) -> None:
+        with self.assertRaises(ValueError):
+            Plan.from_dict({"name": "x"})
+
+    def test_rejects_non_list_steps(self) -> None:
+        with self.assertRaises(ValueError):
+            Plan.from_dict({"steps": "nope"})
