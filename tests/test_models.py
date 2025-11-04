@@ -109,3 +109,44 @@ class PlanTests(unittest.TestCase):
     def test_rejects_non_list_steps(self) -> None:
         with self.assertRaises(ValueError):
             Plan.from_dict({"steps": "nope"})
+
+
+class PolicyTests(unittest.TestCase):
+    def test_defaults(self) -> None:
+        policy = Policy.from_dict({})
+        self.assertEqual(policy.allowed_tools, ())
+        self.assertFalse(policy.allow_network_tools)
+        self.assertFalse(policy.deny_shell)
+        self.assertIsNone(policy.max_steps)
+
+    def test_from_dict_full(self) -> None:
+        policy = Policy.from_dict(
+            {
+                "allowed_tools": ["read_file"],
+                "denied_tools": ["shell"],
+                "denied_arg_patterns": ["rm\\s+-rf"],
+                "path_rules": {
+                    "allowed_prefixes": ["/workspace"],
+                    "denied_prefixes": ["/etc"],
+                    "denied_patterns": ["\\.env$"],
+                },
+                "max_steps": 5,
+                "max_arg_chars": 100,
+                "allow_network_tools": True,
+                "deny_shell": True,
+            }
+        )
+        self.assertEqual(policy.allowed_tools, ("read_file",))
+        self.assertEqual(policy.path_rules.allowed_prefixes, ("/workspace",))
+        self.assertEqual(policy.max_steps, 5)
+        self.assertTrue(policy.allow_network_tools)
+
+    def test_rejects_unknown_field(self) -> None:
+        with self.assertRaises(ValueError):
+            Policy.from_dict({"nope": 1})
+
+    def test_rejects_bad_max_steps(self) -> None:
+        with self.assertRaises(ValueError):
+            Policy.from_dict({"max_steps": -1})
+        with self.assertRaises(ValueError):
+            Policy.from_dict({"max_steps": "1"})
