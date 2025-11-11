@@ -150,3 +150,39 @@ class PolicyTests(unittest.TestCase):
             Policy.from_dict({"max_steps": -1})
         with self.assertRaises(ValueError):
             Policy.from_dict({"max_steps": "1"})
+
+    def test_rejects_bad_path_rule(self) -> None:
+        with self.assertRaises(ValueError):
+            PathRule.from_dict({"unknown": []})
+        with self.assertRaises(ValueError):
+            PathRule.from_dict({"allowed_prefixes": "nope"})
+
+    def test_to_dict_round_trip(self) -> None:
+        policy = Policy.from_dict(
+            {
+                "allowed_tools": ["read_file"],
+                "deny_shell": True,
+                "path_rules": {"denied_prefixes": ["/secret"]},
+            }
+        )
+        restored = Policy.from_dict(policy.to_dict())
+        self.assertEqual(restored, policy)
+
+
+class ReportTests(unittest.TestCase):
+    def test_counts_and_flags(self) -> None:
+        report = Report(
+            verdict=Verdict.BLOCK,
+            findings=[
+                Finding("A", Severity.HIGH, Verdict.BLOCK, "b"),
+                Finding("B", Severity.LOW, Verdict.FLAG, "f"),
+                Finding("C", Severity.LOW, Verdict.FLAG, "f2"),
+            ],
+            steps_checked=3,
+        )
+        self.assertTrue(report.blocked)
+        self.assertFalse(report.allowed)
+        self.assertEqual(report.counts, {"allow": 0, "flag": 2, "block": 1})
+        data = report.to_dict()
+        self.assertEqual(data["verdict"], "block")
+        self.assertEqual(data["finding_count"], 3)
