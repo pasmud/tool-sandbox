@@ -186,3 +186,7 @@ class ReportTests(unittest.TestCase):
         data = report.to_dict()
         self.assertEqual(data["verdict"], "block")
         self.assertEqual(data["finding_count"], 3)
+
+
+if __name__ == "__main__":
+    unittest.main()
