@@ -1,0 +1,14 @@
+{
+  "allowed_tools": ["read_file", "write_file", "list_dir"],
+  "denied_tools": ["shell", "exec"],
+  "deny_shell": true,
+  "allow_network_tools": false,
+  "max_steps": 10,
+  "max_arg_chars": 2000,
+  "denied_arg_patterns": ["curl\\s+.*\\|\\s*sh", "rm\\s+-rf"],
+  "path_rules": {
+    "allowed_prefixes": ["/workspace", "/tmp"],
+    "denied_prefixes": ["/etc", "/proc", "/root"],
+    "denied_patterns": ["(^|/)\\.\\.(?:/|$)", "\\.env$", "id_rsa"]
+  }
+}
