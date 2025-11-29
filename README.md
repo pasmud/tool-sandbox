@@ -16,3 +16,19 @@ The goal is practical guardrails: catch obviously risky tool usage, out-of-scope
 
 From the repository root:
 
+```bash
+python -m pip install -e .
+```
+
+Requires Python 3.10+.
+
+## Quick start
+
+Check the included sample plan against the sample policy:
+
+```bash
+python -m tool_sandbox check examples/sample_plan.json --policy examples/sample_policy.json
+```
+
+Text report:
+
