@@ -32,3 +32,21 @@ python -m tool_sandbox check examples/sample_plan.json --policy examples/sample_
 
 Text report:
 
+```bash
+python -m tool_sandbox check examples/sample_plan.json --policy examples/sample_policy.json --format text
+```
+
+Read a plan from stdin:
+
+```bash
+cat examples/sample_plan.json | python -m tool_sandbox check - --policy examples/sample_policy.json
+```
+
+Use `--strict` to fail the process on `FLAG` findings as well as `BLOCK`:
+
+```bash
+python -m tool_sandbox check examples/sample_plan.json --policy examples/sample_policy.json --strict
+```
+
+Exit codes:
+
