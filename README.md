@@ -90,3 +90,33 @@ All policy fields are optional; omitted fields use safe-ish defaults (network to
 }
 ```
 
+### Policy fields
+
+| Field | Type | Meaning |
+|---|---|---|
+| `allowed_tools` | `string[]` | If non-empty, only these tools are allowed. |
+| `denied_tools` | `string[]` | Tools explicitly blocked. |
+| `deny_shell` | `bool` | Block tools in `shell_tools`. |
+| `shell_tools` | `string[]` | Tool names treated as shell-like. |
+| `allow_network_tools` | `bool` | Permit tools in `network_tools`. |
+| `network_tools` | `string[]` | Tool names treated as network-capable. |
+| `max_steps` | `int` | Maximum plan length. |
+| `max_arg_chars` | `int` | Maximum JSON-serialized argument size per step. |
+| `denied_arg_patterns` | `string[]` | Regex patterns denied anywhere in serialized args. |
+| `filesystem_tools` | `string[]` | Tools subject to path checks. |
+| `path_rules.allowed_prefixes` | `string[]` | If set, path args must fall under one of these prefixes. |
+| `path_rules.denied_prefixes` | `string[]` | Path prefixes that are always blocked. |
+| `path_rules.denied_patterns` | `string[]` | Regex patterns denied in normalized paths. |
+
+## Architecture and behavior
+
+The checker is intentionally simple and auditable:
+
+1. **Load/validate**: `models.Plan.from_dict` and `models.Policy.from_dict` parse and validate input. Unknown fields and schema errors raise `ValueError`.
+2. **Plan-level checks**: enforce `max_steps`.
+3. **Step checks**: for each step, evaluate tool allow/deny rules, shell/network gates, arg size, denied arg regexes, and path rules.
+4. **Path normalization**: paths are normalized deterministically (POSIX-style, collapsing `.`/`..`, without touching the host filesystem) before prefix/pattern checks.
+5. **Verdict aggregation**: each finding has a verdict (`allow`/`flag`/`block`); the report verdict is the most severe finding verdict. No findings means `allow`.
+
+### Rule IDs
+
