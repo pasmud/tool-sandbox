@@ -120,3 +120,38 @@ The checker is intentionally simple and auditable:
 
 ### Rule IDs
 
+| Rule | Trigger |
+|---|---|
+| `PLAN001` | Plan exceeds `max_steps`. |
+| `TOOL001` | Tool explicitly in `denied_tools`. |
+| `TOOL002` | Tool not in `allowed_tools` (when set). |
+| `TOOL003` | Shell tool used while `deny_shell=true`. |
+| `TOOL004` | Network tool used while `allow_network_tools=false`. |
+| `ARG001` | Serialized args exceed `max_arg_chars`. |
+| `ARG002` | Serialized args match a denied regex. |
+| `PATH001` | Path matches a denied path pattern. |
+| `PATH002` | Path is under a denied prefix. |
+| `PATH003` | Path is outside `allowed_prefixes`. |
+
+## Library usage
+
+```python
+from tool_sandbox import check_plan
+
+report = check_plan(
+    "examples/sample_plan.json",
+    "examples/sample_policy.json",
+)
+print(report.verdict.value)
+for finding in report.findings:
+    print(finding.rule_id, finding.verdict.value, finding.message)
+```
+
+## Limitations
+
+- **Static policy check, not a runtime sandbox.** It inspects declared plan data; it cannot see what a tool actually does at runtime.
+- **Regex-based matching is only as good as the policy.** Argument/path regexes can miss obfuscated or semantic attacks.
+- **Path checks are lexical.** They do not resolve symlinks or inspect the real filesystem.
+- **No taint/data-flow analysis.** The checker does not track whether untrusted output flows into later dangerous args.
+- **Tool name normalization is exact string matching.** Different aliases for the same capability must be listed explicitly in policy.
+
