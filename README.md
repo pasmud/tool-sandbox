@@ -155,3 +155,19 @@ for finding in report.findings:
 - **No taint/data-flow analysis.** The checker does not track whether untrusted output flows into later dangerous args.
 - **Tool name normalization is exact string matching.** Different aliases for the same capability must be listed explicitly in policy.
 
+## Development
+
+Run tests:
+
+```bash
+python -m unittest discover -v
+```
+
+Run the demo:
+
+```bash
+python -m tool_sandbox check examples/sample_plan.json --policy examples/sample_policy.json --format text
+```
+
+## License
+
