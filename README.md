@@ -171,3 +171,4 @@ python -m tool_sandbox check examples/sample_plan.json --policy examples/sample_
 
 ## License
 
+MIT. See [LICENSE](LICENSE).
